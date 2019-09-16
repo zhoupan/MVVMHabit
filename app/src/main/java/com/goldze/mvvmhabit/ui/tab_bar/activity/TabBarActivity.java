@@ -28,67 +28,67 @@ import me.majiajie.pagerbottomtabstrip.listener.OnTabItemSelectedListener;
  */
 
 public class TabBarActivity extends BaseActivity<ActivityTabBarBinding, BaseViewModel> {
-    private List<Fragment> mFragments;
+ private List<Fragment> mFragments;
 
-    @Override
-    public int initContentView(Bundle savedInstanceState) {
-        return R.layout.activity_tab_bar;
-    }
+ @Override
+ public int initContentView(Bundle savedInstanceState) {
+  return R.layout.activity_tab_bar;
+ }
 
-    @Override
-    public int initVariableId() {
-        return BR.viewModel;
-    }
+ @Override
+ public int initVariableId() {
+  return BR.viewModel;
+ }
 
-    @Override
-    public void initData() {
-        //初始化Fragment
-        initFragment();
-        //初始化底部Button
-        initBottomTab();
-    }
+ @Override
+ public void initData() {
+  //初始化Fragment
+  initFragment();
+  //初始化底部Button
+  initBottomTab();
+ }
 
-    private void initFragment() {
-        mFragments = new ArrayList<>();
-        mFragments.add(new TabBar1Fragment());
-        mFragments.add(new TabBar2Fragment());
-        mFragments.add(new TabBar3Fragment());
-        mFragments.add(new TabBar4Fragment());
-        //默认选中第一个
-        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-        transaction.add(R.id.frameLayout, mFragments.get(0));
-        transaction.commitAllowingStateLoss();
-    }
+ private void initFragment() {
+  mFragments = new ArrayList<>();
+  mFragments.add(new TabBar1Fragment());
+  mFragments.add(new TabBar2Fragment());
+  mFragments.add(new TabBar3Fragment());
+  mFragments.add(new TabBar4Fragment());
+  //默认选中第一个
+  FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+  transaction.add(R.id.frameLayout, mFragments.get(0));
+  transaction.commitAllowingStateLoss();
+ }
 
-    private void initBottomTab() {
-        NavigationController navigationController = binding.pagerBottomTab.material()
-                .addItem(R.mipmap.yingyong, "应用")
-                .addItem(R.mipmap.huanzhe, "工作")
-                .addItem(R.mipmap.xiaoxi_select, "消息")
-                .addItem(R.mipmap.wode_select, "我的")
-                .setDefaultColor(ContextCompat.getColor(this, R.color.textColorVice))
-                .build();
-        //底部按钮的点击事件监听
-        navigationController.addTabItemSelectedListener(new OnTabItemSelectedListener() {
-            @Override
-            public void onSelected(int index, int old) {
-                FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-                transaction.replace(R.id.frameLayout, mFragments.get(index));
-                transaction.commitAllowingStateLoss();
-            }
+ private void initBottomTab() {
+  NavigationController navigationController = binding.pagerBottomTab.material()
+   .addItem(R.mipmap.yingyong, "应用")
+   .addItem(R.mipmap.huanzhe, "工作")
+   .addItem(R.mipmap.xiaoxi_select, "消息")
+   .addItem(R.mipmap.wode_select, "我的")
+   .setDefaultColor(ContextCompat.getColor(this, R.color.textColorVice))
+   .build();
+  //底部按钮的点击事件监听
+  navigationController.addTabItemSelectedListener(new OnTabItemSelectedListener() {
+   @Override
+   public void onSelected(int index, int old) {
+    FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+    transaction.replace(R.id.frameLayout, mFragments.get(index));
+    transaction.commitAllowingStateLoss();
+   }
 
-            @Override
-            public void onRepeat(int index) {
-            }
-        });
-    }
+   @Override
+   public void onRepeat(int index) {
+   }
+  });
+ }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (mFragments != null) {
-            mFragments.clear();
-            mFragments = null;
-        }
-    }
+ @Override
+ protected void onDestroy() {
+  super.onDestroy();
+  if (mFragments != null) {
+   mFragments.clear();
+   mFragments = null;
+  }
+ }
 }

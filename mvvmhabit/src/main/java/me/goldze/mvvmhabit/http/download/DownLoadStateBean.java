@@ -10,72 +10,71 @@ import java.io.Serializable;
  */
 
 public class DownLoadStateBean implements Serializable, Parcelable {
-    long total; //  文件总大小
-    long bytesLoaded; //已加载文件的大小
-    String tag; // 多任务下载时的一个标记
+ public static final Creator<DownLoadStateBean> CREATOR = new Creator<DownLoadStateBean>() {
+  @Override
+  public DownLoadStateBean createFromParcel(Parcel source) {
+   return new DownLoadStateBean(source);
+  }
 
-    public DownLoadStateBean(long total, long bytesLoaded) {
-        this.total = total;
-        this.bytesLoaded = bytesLoaded;
-    }
+  @Override
+  public DownLoadStateBean[] newArray(int size) {
+   return new DownLoadStateBean[size];
+  }
+ };
+ long total; //  文件总大小
+ long bytesLoaded; //已加载文件的大小
+ String tag; // 多任务下载时的一个标记
 
-    public DownLoadStateBean(long total, long bytesLoaded, String tag) {
-        this.total = total;
-        this.bytesLoaded = bytesLoaded;
-        this.tag = tag;
-    }
+ public DownLoadStateBean(long total, long bytesLoaded) {
+  this.total = total;
+  this.bytesLoaded = bytesLoaded;
+ }
 
-    public long getTotal() {
-        return total;
-    }
+ public DownLoadStateBean(long total, long bytesLoaded, String tag) {
+  this.total = total;
+  this.bytesLoaded = bytesLoaded;
+  this.tag = tag;
+ }
 
-    public void setTotal(long total) {
-        this.total = total;
-    }
+ protected DownLoadStateBean(Parcel in) {
+  this.total = in.readLong();
+  this.bytesLoaded = in.readLong();
+  this.tag = in.readString();
+ }
 
-    public long getBytesLoaded() {
-        return bytesLoaded;
-    }
+ public long getTotal() {
+  return total;
+ }
 
-    public void setBytesLoaded(long bytesLoaded) {
-        this.bytesLoaded = bytesLoaded;
-    }
+ public void setTotal(long total) {
+  this.total = total;
+ }
 
-    public String getTag() {
-        return tag;
-    }
+ public long getBytesLoaded() {
+  return bytesLoaded;
+ }
 
-    public void setTag(String tag) {
-        this.tag = tag;
-    }
+ public void setBytesLoaded(long bytesLoaded) {
+  this.bytesLoaded = bytesLoaded;
+ }
 
-    @Override
-    public int describeContents() {
-        return 0;
-    }
+ public String getTag() {
+  return tag;
+ }
 
-    @Override
-    public void writeToParcel(Parcel dest, int flags) {
-        dest.writeLong(this.total);
-        dest.writeLong(this.bytesLoaded);
-        dest.writeString(this.tag);
-    }
+ public void setTag(String tag) {
+  this.tag = tag;
+ }
 
-    protected DownLoadStateBean(Parcel in) {
-        this.total = in.readLong();
-        this.bytesLoaded = in.readLong();
-        this.tag = in.readString();
-    }
+ @Override
+ public int describeContents() {
+  return 0;
+ }
 
-    public static final Creator<DownLoadStateBean> CREATOR = new Creator<DownLoadStateBean>() {
-        @Override
-        public DownLoadStateBean createFromParcel(Parcel source) {
-            return new DownLoadStateBean(source);
-        }
-
-        @Override
-        public DownLoadStateBean[] newArray(int size) {
-            return new DownLoadStateBean[size];
-        }
-    };
+ @Override
+ public void writeToParcel(Parcel dest, int flags) {
+  dest.writeLong(this.total);
+  dest.writeLong(this.bytesLoaded);
+  dest.writeString(this.tag);
+ }
 }

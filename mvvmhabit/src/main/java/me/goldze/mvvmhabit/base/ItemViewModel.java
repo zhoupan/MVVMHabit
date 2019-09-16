@@ -8,9 +8,9 @@ import android.support.annotation.NonNull;
  */
 
 public class ItemViewModel<VM extends BaseViewModel> {
-    protected VM viewModel;
+ protected VM viewModel;
 
-    public ItemViewModel(@NonNull VM viewModel) {
-        this.viewModel = viewModel;
-    }
+ public ItemViewModel(@NonNull VM viewModel) {
+  this.viewModel = viewModel;
+ }
 }

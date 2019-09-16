@@ -14,10 +14,10 @@ import retrofit2.http.POST;
  */
 
 public interface DemoApiService {
-    @GET("action/apiv2/banner?catalog=1")
-    Observable<BaseResponse<DemoEntity>> demoGet();
+ @GET("action/apiv2/banner?catalog=1")
+ Observable<BaseResponse<DemoEntity>> demoGet();
 
-    @FormUrlEncoded
-    @POST("action/apiv2/banner")
-    Observable<BaseResponse<DemoEntity>> demoPost(@Field("catalog") String catalog);
+ @FormUrlEncoded
+ @POST("action/apiv2/banner")
+ Observable<BaseResponse<DemoEntity>> demoPost(@Field("catalog") String catalog);
 }

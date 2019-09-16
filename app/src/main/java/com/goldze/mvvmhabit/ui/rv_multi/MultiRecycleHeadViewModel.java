@@ -16,15 +16,15 @@ import me.goldze.mvvmhabit.utils.ToastUtils;
 
 public class MultiRecycleHeadViewModel extends MultiItemViewModel {
 
-    public MultiRecycleHeadViewModel(@NonNull BaseViewModel viewModel) {
-        super(viewModel);
-    }
+ //条目的点击事件
+ public BindingCommand itemClick = new BindingCommand(new BindingAction() {
+  @Override
+  public void call() {
+   ToastUtils.showShort("我是头布局");
+  }
+ });
 
-    //条目的点击事件
-    public BindingCommand itemClick = new BindingCommand(new BindingAction() {
-        @Override
-        public void call() {
-            ToastUtils.showShort("我是头布局");
-        }
-    });
+ public MultiRecycleHeadViewModel(@NonNull BaseViewModel viewModel) {
+  super(viewModel);
+ }
 }

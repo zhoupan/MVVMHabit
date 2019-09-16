@@ -15,13 +15,13 @@ import me.goldze.mvvmhabit.base.BaseFragment;
  */
 
 public class TabBar1Fragment extends BaseFragment {
-    @Override
-    public int initContentView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        return R.layout.fragment_tab_bar_1;
-    }
+ @Override
+ public int initContentView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+  return R.layout.fragment_tab_bar_1;
+ }
 
-    @Override
-    public int initVariableId() {
-        return BR.viewModel;
-    }
+ @Override
+ public int initVariableId() {
+  return BR.viewModel;
+ }
 }

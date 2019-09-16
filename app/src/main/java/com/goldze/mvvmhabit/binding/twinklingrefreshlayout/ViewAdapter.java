@@ -15,24 +15,24 @@ import me.goldze.mvvmhabit.binding.command.BindingCommand;
  */
 public class ViewAdapter {
 
-    @BindingAdapter(value = {"onRefreshCommand", "onLoadMoreCommand"}, requireAll = false)
-    public static void onRefreshAndLoadMoreCommand(TwinklingRefreshLayout layout, final BindingCommand onRefreshCommand, final BindingCommand onLoadMoreCommand) {
-        layout.setOnRefreshListener(new RefreshListenerAdapter() {
-            @Override
-            public void onRefresh(TwinklingRefreshLayout refreshLayout) {
-                super.onRefresh(refreshLayout);
-                if (onRefreshCommand != null) {
-                    onRefreshCommand.execute();
-                }
-            }
-
-            @Override
-            public void onLoadMore(TwinklingRefreshLayout refreshLayout) {
-                super.onLoadMore(refreshLayout);
-                if (onLoadMoreCommand != null) {
-                    onLoadMoreCommand.execute();
-                }
-            }
-        });
+ @BindingAdapter(value = {"onRefreshCommand", "onLoadMoreCommand"}, requireAll = false)
+ public static void onRefreshAndLoadMoreCommand(TwinklingRefreshLayout layout, final BindingCommand onRefreshCommand, final BindingCommand onLoadMoreCommand) {
+  layout.setOnRefreshListener(new RefreshListenerAdapter() {
+   @Override
+   public void onRefresh(TwinklingRefreshLayout refreshLayout) {
+    super.onRefresh(refreshLayout);
+    if (onRefreshCommand != null) {
+     onRefreshCommand.execute();
     }
+   }
+
+   @Override
+   public void onLoadMore(TwinklingRefreshLayout refreshLayout) {
+    super.onLoadMore(refreshLayout);
+    if (onLoadMoreCommand != null) {
+     onLoadMoreCommand.execute();
+    }
+   }
+  });
+ }
 }

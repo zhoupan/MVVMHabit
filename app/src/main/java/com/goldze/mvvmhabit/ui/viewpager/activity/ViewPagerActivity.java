@@ -22,33 +22,33 @@ import me.goldze.mvvmhabit.utils.ToastUtils;
 
 public class ViewPagerActivity extends BaseActivity<FragmentViewpagerBinding, ViewPagerViewModel> {
 
-    @Override
-    public int initContentView(Bundle savedInstanceState) {
-        return R.layout.fragment_viewpager;
-    }
+ @Override
+ public int initContentView(Bundle savedInstanceState) {
+  return R.layout.fragment_viewpager;
+ }
 
-    @Override
-    public int initVariableId() {
-        return BR.viewModel;
-    }
+ @Override
+ public int initVariableId() {
+  return BR.viewModel;
+ }
 
 
-    @Override
-    public void initData() {
-        // 使用 TabLayout 和 ViewPager 相关联
-        binding.tabs.setupWithViewPager(binding.viewPager);
-        binding.viewPager.addOnPageChangeListener(new TabLayout.TabLayoutOnPageChangeListener(binding.tabs));
-        //给ViewPager设置adapter
-        binding.setAdapter(new ViewPagerBindingAdapter());
-    }
+ @Override
+ public void initData() {
+  // 使用 TabLayout 和 ViewPager 相关联
+  binding.tabs.setupWithViewPager(binding.viewPager);
+  binding.viewPager.addOnPageChangeListener(new TabLayout.TabLayoutOnPageChangeListener(binding.tabs));
+  //给ViewPager设置adapter
+  binding.setAdapter(new ViewPagerBindingAdapter());
+ }
 
-    @Override
-    public void initViewObservable() {
-        viewModel.itemClickEvent.observe(this, new Observer<String>() {
-            @Override
-            public void onChanged(@Nullable String text) {
-                ToastUtils.showShort("position：" + text);
-            }
-        });
-    }
+ @Override
+ public void initViewObservable() {
+  viewModel.itemClickEvent.observe(this, new Observer<String>() {
+   @Override
+   public void onChanged(@Nullable String text) {
+    ToastUtils.showShort("position：" + text);
+   }
+  });
+ }
 }

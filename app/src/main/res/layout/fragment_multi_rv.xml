@@ -1,39 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layout>
 
-    <data>
+ <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  xmlns:binding="http://schemas.android.com/apk/res-auto"
+  android:layout_width="match_parent"
+  android:layout_height="match_parent"
+  android:orientation="vertical">
 
-        <import type="com.goldze.mvvmhabit.ui.rv_multi.MultiRecycleViewModel" />
+  <android.support.v7.widget.RecyclerView
+   android:layout_width="match_parent"
+   android:layout_height="match_parent"
+   binding:adapter="@{adapter}"
+   binding:itemBinding="@{viewModel.itemBinding}"
+   binding:items="@{viewModel.observableList}"
+   binding:layoutManager="@{LayoutManagers.linear()}"
+   binding:lineManager="@{LineManagers.horizontal()}" />
 
-        <import type="me.tatarka.bindingcollectionadapter2.BindingRecyclerViewAdapter" />
+ </LinearLayout>
 
-        <variable
-            name="viewModel"
-            type="MultiRecycleViewModel" />
+ <data>
 
-        <variable
-            name="adapter"
-            type="BindingRecyclerViewAdapter" />
+  <import type="com.goldze.mvvmhabit.ui.rv_multi.MultiRecycleViewModel" />
 
-        <import type="me.tatarka.bindingcollectionadapter2.LayoutManagers" />
+  <import type="me.tatarka.bindingcollectionadapter2.BindingRecyclerViewAdapter" />
 
-        <import type="me.goldze.mvvmhabit.binding.viewadapter.recyclerview.LineManagers" />
-    </data>
+  <import type="me.tatarka.bindingcollectionadapter2.LayoutManagers" />
 
-    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:binding="http://schemas.android.com/apk/res-auto"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical">
+  <import type="me.goldze.mvvmhabit.binding.viewadapter.recyclerview.LineManagers" />
 
-        <android.support.v7.widget.RecyclerView
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            binding:adapter="@{adapter}"
-            binding:itemBinding="@{viewModel.itemBinding}"
-            binding:items="@{viewModel.observableList}"
-            binding:layoutManager="@{LayoutManagers.linear()}"
-            binding:lineManager="@{LineManagers.horizontal()}" />
+  <variable
+   name="viewModel"
+   type="MultiRecycleViewModel" />
 
-    </LinearLayout>
+  <variable
+   name="adapter"
+   type="BindingRecyclerViewAdapter" />
+ </data>
 </layout>

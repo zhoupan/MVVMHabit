@@ -5,5 +5,5 @@ package me.goldze.mvvmhabit.binding.command;
  */
 
 public interface BindingAction {
-    void call();
+ void call();
 }

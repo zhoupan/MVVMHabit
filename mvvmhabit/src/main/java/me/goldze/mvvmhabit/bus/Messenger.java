@@ -16,609 +16,605 @@ import me.goldze.mvvmhabit.binding.command.BindingConsumer;
  */
 public class Messenger {
 
-    private static Messenger defaultInstance;
+ private static Messenger defaultInstance;
 
-    private HashMap<Type, List<WeakActionAndToken>> recipientsOfSubclassesAction;
+ private HashMap<Type, List<WeakActionAndToken>> recipientsOfSubclassesAction;
 
-    private HashMap<Type, List<WeakActionAndToken>> recipientsStrictAction;
+ private HashMap<Type, List<WeakActionAndToken>> recipientsStrictAction;
 
-    public static Messenger getDefault() {
-        if (defaultInstance == null) {
-            defaultInstance = new Messenger();
-        }
-        return defaultInstance;
+ public static Messenger getDefault() {
+  if (defaultInstance == null) {
+   defaultInstance = new Messenger();
+  }
+  return defaultInstance;
+ }
+
+
+ public static void overrideDefault(Messenger newWeakMessenger) {
+  defaultInstance = newWeakMessenger;
+ }
+
+ public static void reset() {
+  defaultInstance = null;
+ }
+
+ private static <T> void sendToList(
+  T message,
+  Collection<WeakActionAndToken> list,
+  Type messageTargetType,
+  Object token) {
+  if (list != null) {
+   // Clone to protect from people registering in a "receive message" method
+   // Bug correction Messaging BL0004.007
+   ArrayList<WeakActionAndToken> listClone = new ArrayList<>();
+   listClone.addAll(list);
+
+   for (WeakActionAndToken item : listClone) {
+    WeakAction executeAction = item.getAction();
+    if (executeAction != null
+     && item.getAction().isLive()
+     && item.getAction().getTarget() != null
+     && (messageTargetType == null
+     || item.getAction().getTarget().getClass() == messageTargetType
+     || classImplements(item.getAction().getTarget().getClass(), messageTargetType))
+     && ((item.getToken() == null && token == null)
+     || item.getToken() != null && item.getToken().equals(token))) {
+     executeAction.execute(message);
     }
+   }
+  }
+ }
 
+ private static void unregisterFromLists(Object recipient, HashMap<Type, List<WeakActionAndToken>> lists) {
+  if (recipient == null
+   || lists == null
+   || lists.size() == 0) {
+   return;
+  }
+  synchronized (lists) {
+   for (Type messageType : lists.keySet()) {
+    for (WeakActionAndToken item : lists.get(messageType)) {
+     WeakAction weakAction = item.getAction();
 
-    public static void overrideDefault(Messenger newWeakMessenger) {
-        defaultInstance = newWeakMessenger;
+     if (weakAction != null
+      && recipient == weakAction.getTarget()) {
+      weakAction.markForDeletion();
+     }
     }
+   }
+  }
+  cleanupList(lists);
+ }
 
-    public static void reset() {
-        defaultInstance = null;
+ private static <T> void unregisterFromLists(
+  Object recipient,
+  BindingConsumer<T> action,
+  HashMap<Type, List<WeakActionAndToken>> lists,
+  Class<T> tClass) {
+  Type messageType = tClass;
+
+  if (recipient == null
+   || lists == null
+   || lists.size() == 0
+   || !lists.containsKey(messageType)) {
+   return;
+  }
+
+  synchronized (lists) {
+   for (WeakActionAndToken item : lists.get(messageType)) {
+    WeakAction<T> weakActionCasted = (WeakAction<T>) item.getAction();
+
+    if (weakActionCasted != null
+     && recipient == weakActionCasted.getTarget()
+     && (action == null
+     || action == weakActionCasted.getBindingConsumer())) {
+     item.getAction().markForDeletion();
     }
+   }
+  }
+ }
 
-    /**
-     * @param recipient the receiver,if register in activity the recipient always set "this",
-     *                  and "WeakMessenger.getDefault().unregister(this)" in onDestroy,if in ViewModel,
-     *                  you can also register with Activity context and also in onDestroy to unregister.
-     * @param action    do something on message received
-     */
-    public void register(Object recipient, BindingAction action) {
-        register(recipient, null, false, action);
+ private static void unregisterFromLists(
+  Object recipient,
+  BindingAction action,
+  HashMap<Type, List<WeakActionAndToken>> lists
+ ) {
+  Type messageType = NotMsgType.class;
+
+  if (recipient == null
+   || lists == null
+   || lists.size() == 0
+   || !lists.containsKey(messageType)) {
+   return;
+  }
+
+  synchronized (lists) {
+   for (WeakActionAndToken item : lists.get(messageType)) {
+    WeakAction weakActionCasted = (WeakAction) item.getAction();
+
+    if (weakActionCasted != null
+     && recipient == weakActionCasted.getTarget()
+     && (action == null
+     || action == weakActionCasted.getBindingAction())) {
+     item.getAction().markForDeletion();
     }
+   }
+  }
+ }
 
-    /**
-     * @param recipient                 the receiver,if register in activity the recipient always set "this",
-     *                                  and "WeakMessenger.getDefault().unregister(this)" in onDestroy,if in ViewModel,
-     *                                  you can also register with Activity context and also in onDestroy to unregister.
-     * @param receiveDerivedMessagesToo whether Derived class of recipient can receive the message
-     * @param action                    do something on message received
-     */
-    public void register(Object recipient, boolean receiveDerivedMessagesToo, BindingAction action) {
-        register(recipient, null, receiveDerivedMessagesToo, action);
+ private static <T> void unregisterFromLists(
+  Object recipient,
+  Object token,
+  BindingConsumer<T> action,
+  HashMap<Type, List<WeakActionAndToken>> lists, Class<T> tClass) {
+  Type messageType = tClass;
+
+  if (recipient == null
+   || lists == null
+   || lists.size() == 0
+   || !lists.containsKey(messageType)) {
+   return;
+  }
+
+  synchronized (lists) {
+   for (WeakActionAndToken item : lists.get(messageType)) {
+    WeakAction<T> weakActionCasted = (WeakAction<T>) item.getAction();
+
+    if (weakActionCasted != null
+     && recipient == weakActionCasted.getTarget()
+     && (action == null
+     || action == weakActionCasted.getBindingConsumer())
+     && (token == null
+     || token.equals(item.getToken()))) {
+     item.getAction().markForDeletion();
     }
+   }
+  }
+ }
 
-    /**
-     * @param recipient the receiver,if register in activity the recipient always set "this",
-     *                  and "WeakMessenger.getDefault().unregister(this)" in onDestroy,if in ViewModel,
-     *                  you can also register with Activity context and also in onDestroy to unregister.
-     * @param token     register with a unique token,when a messenger send a msg with same token,it
-     *                  will
-     *                  receive this msg
-     * @param action    do something on message received
-     */
-    public void register(Object recipient, Object token, BindingAction action) {
-        register(recipient, token, false, action);
+ private static void unregisterFromLists(
+  Object recipient,
+  Object token,
+  BindingAction action,
+  HashMap<Type, List<WeakActionAndToken>> lists) {
+  Type messageType = NotMsgType.class;
+
+  if (recipient == null
+   || lists == null
+   || lists.size() == 0
+   || !lists.containsKey(messageType)) {
+   return;
+  }
+
+  synchronized (lists) {
+   for (WeakActionAndToken item : lists.get(messageType)) {
+    WeakAction weakActionCasted = (WeakAction) item.getAction();
+
+    if (weakActionCasted != null
+     && recipient == weakActionCasted.getTarget()
+     && (action == null
+     || action == weakActionCasted.getBindingAction())
+     && (token == null
+     || token.equals(item.getToken()))) {
+     item.getAction().markForDeletion();
     }
+   }
+  }
+ }
 
-    /**
-     * @param recipient                 the receiver,if register in activity the recipient always set "this",
-     *                                  and "WeakMessenger.getDefault().unregister(this)" in onDestroy,if in ViewModel,
-     *                                  you can also register with Activity context and also in onDestroy to unregister.
-     * @param token                     register with a unique token,when a messenger send a msg with same token,it
-     *                                  will
-     *                                  receive this msg
-     * @param receiveDerivedMessagesToo whether Derived class of recipient can receive the message
-     * @param action                    do something on message received
-     */
-    public void register(Object recipient, Object token, boolean receiveDerivedMessagesToo, BindingAction action) {
+ private static boolean classImplements(Type instanceType, Type interfaceType) {
+  if (interfaceType == null
+   || instanceType == null) {
+   return false;
+  }
+  Class[] interfaces = ((Class) instanceType).getInterfaces();
+  for (Class currentInterface : interfaces) {
+   if (currentInterface == interfaceType) {
+    return true;
+   }
+  }
 
-        Type messageType = NotMsgType.class;
+  return false;
+ }
 
-        HashMap<Type, List<WeakActionAndToken>> recipients;
-
-        if (receiveDerivedMessagesToo) {
-            if (recipientsOfSubclassesAction == null) {
-                recipientsOfSubclassesAction = new HashMap<Type, List<WeakActionAndToken>>();
-            }
-
-            recipients = recipientsOfSubclassesAction;
-        } else {
-            if (recipientsStrictAction == null) {
-                recipientsStrictAction = new HashMap<Type, List<WeakActionAndToken>>();
-            }
-
-            recipients = recipientsStrictAction;
-        }
-
-        List<WeakActionAndToken> list;
-
-        if (!recipients.containsKey(messageType)) {
-            list = new ArrayList<WeakActionAndToken>();
-            recipients.put(messageType, list);
-        } else {
-            list = recipients.get(messageType);
-        }
-
-        WeakAction weakAction = new WeakAction(recipient, action);
-
-        WeakActionAndToken item = new WeakActionAndToken(weakAction, token);
-        list.add(item);
-        cleanup();
+ private static void cleanupList(HashMap<Type, List<WeakActionAndToken>> lists) {
+  if (lists == null) {
+   return;
+  }
+  for (Iterator it = lists.entrySet().iterator(); it.hasNext(); ) {
+   Object key = it.next();
+   List<WeakActionAndToken> itemList = lists.get(key);
+   if (itemList != null) {
+    for (WeakActionAndToken item : itemList) {
+     if (item.getAction() == null
+      || !item.getAction().isLive()) {
+      itemList.remove(item);
+     }
     }
-
-    /**
-     * @param recipient {}
-     * @param tClass    class of T
-     * @param action    this action has one params that type of tClass
-     * @param <T>       message data type
-     */
-    public <T> void register(Object recipient, Class<T> tClass, BindingConsumer<T> action) {
-        register(recipient, null, false, action, tClass);
+    if (itemList.size() == 0) {
+     lists.remove(key);
     }
+   }
+  }
+ }
 
-    /**
-     * see {}
-     *
-     * @param recipient                 receiver of message
-     * @param receiveDerivedMessagesToo whether derived class of recipient can receive the message
-     * @param tClass                    class of T
-     * @param action                    this action has one params that type of tClass
-     * @param <T>                       message data type
-     */
-    public <T> void register(Object recipient, boolean receiveDerivedMessagesToo, Class<T> tClass, BindingConsumer<T> action) {
-        register(recipient, null, receiveDerivedMessagesToo, action, tClass);
+ private static void sendToList(
+  Collection<WeakActionAndToken> list,
+  Type messageTargetType,
+  Object token) {
+  if (list != null) {
+   // Clone to protect from people registering in a "receive message" method
+   // Bug correction Messaging BL0004.007
+   ArrayList<WeakActionAndToken> listClone = new ArrayList<>();
+   listClone.addAll(list);
+
+   for (WeakActionAndToken item : listClone) {
+    WeakAction executeAction = item.getAction();
+    if (executeAction != null
+     && item.getAction().isLive()
+     && item.getAction().getTarget() != null
+     && (messageTargetType == null
+     || item.getAction().getTarget().getClass() == messageTargetType
+     || classImplements(item.getAction().getTarget().getClass(), messageTargetType))
+     && ((item.getToken() == null && token == null)
+     || item.getToken() != null && item.getToken().equals(token))) {
+     executeAction.execute();
     }
+   }
+  }
+ }
 
-    /**
-     * see {}
-     *
-     * @param recipient receiver of message
-     * @param token     register with a unique token,when a messenger send a msg with same token,it
-     *                  will
-     *                  receive this msg
-     * @param tClass    class of T for BindingConsumer
-     * @param action    this action has one params that type of tClass
-     * @param <T>       message data type
-     */
-    public <T> void register(Object recipient, Object token, Class<T> tClass, BindingConsumer<T> action) {
-        register(recipient, token, false, action, tClass);
-    }
+ /**
+  * @param recipient the receiver,if register in activity the recipient always set "this",
+  *                  and "WeakMessenger.getDefault().unregister(this)" in onDestroy,if in ViewModel,
+  *                  you can also register with Activity context and also in onDestroy to unregister.
+  * @param action    do something on message received
+  */
+ public void register(Object recipient, BindingAction action) {
+  register(recipient, null, false, action);
+ }
 
-    /**
-     * see {}
-     *
-     * @param recipient                 receiver of message
-     * @param token                     register with a unique token,when a messenger send a msg with same token,it
-     *                                  will
-     *                                  receive this msg
-     * @param receiveDerivedMessagesToo whether derived class of recipient can receive the message
-     * @param action                    this action has one params that type of tClass
-     * @param tClass                    class of T for BindingConsumer
-     * @param <T>                       message data type
-     */
-    public <T> void register(Object recipient, Object token, boolean receiveDerivedMessagesToo, BindingConsumer<T> action, Class<T> tClass) {
+ /**
+  * @param recipient                 the receiver,if register in activity the recipient always set "this",
+  *                                  and "WeakMessenger.getDefault().unregister(this)" in onDestroy,if in ViewModel,
+  *                                  you can also register with Activity context and also in onDestroy to unregister.
+  * @param receiveDerivedMessagesToo whether Derived class of recipient can receive the message
+  * @param action                    do something on message received
+  */
+ public void register(Object recipient, boolean receiveDerivedMessagesToo, BindingAction action) {
+  register(recipient, null, receiveDerivedMessagesToo, action);
+ }
 
-        Type messageType = tClass;
+ /**
+  * @param recipient the receiver,if register in activity the recipient always set "this",
+  *                  and "WeakMessenger.getDefault().unregister(this)" in onDestroy,if in ViewModel,
+  *                  you can also register with Activity context and also in onDestroy to unregister.
+  * @param token     register with a unique token,when a messenger send a msg with same token,it
+  *                  will
+  *                  receive this msg
+  * @param action    do something on message received
+  */
+ public void register(Object recipient, Object token, BindingAction action) {
+  register(recipient, token, false, action);
+ }
 
-        HashMap<Type, List<WeakActionAndToken>> recipients;
+ /**
+  * @param recipient                 the receiver,if register in activity the recipient always set "this",
+  *                                  and "WeakMessenger.getDefault().unregister(this)" in onDestroy,if in ViewModel,
+  *                                  you can also register with Activity context and also in onDestroy to unregister.
+  * @param token                     register with a unique token,when a messenger send a msg with same token,it
+  *                                  will
+  *                                  receive this msg
+  * @param receiveDerivedMessagesToo whether Derived class of recipient can receive the message
+  * @param action                    do something on message received
+  */
+ public void register(Object recipient, Object token, boolean receiveDerivedMessagesToo, BindingAction action) {
 
-        if (receiveDerivedMessagesToo) {
-            if (recipientsOfSubclassesAction == null) {
-                recipientsOfSubclassesAction = new HashMap<Type, List<WeakActionAndToken>>();
-            }
+  Type messageType = NotMsgType.class;
 
-            recipients = recipientsOfSubclassesAction;
-        } else {
-            if (recipientsStrictAction == null) {
-                recipientsStrictAction = new HashMap<Type, List<WeakActionAndToken>>();
-            }
+  HashMap<Type, List<WeakActionAndToken>> recipients;
 
-            recipients = recipientsStrictAction;
-        }
+  if (receiveDerivedMessagesToo) {
+   if (recipientsOfSubclassesAction == null) {
+    recipientsOfSubclassesAction = new HashMap<Type, List<WeakActionAndToken>>();
+   }
 
-        List<WeakActionAndToken> list;
+   recipients = recipientsOfSubclassesAction;
+  } else {
+   if (recipientsStrictAction == null) {
+    recipientsStrictAction = new HashMap<Type, List<WeakActionAndToken>>();
+   }
 
-        if (!recipients.containsKey(messageType)) {
-            list = new ArrayList<WeakActionAndToken>();
-            recipients.put(messageType, list);
-        } else {
-            list = recipients.get(messageType);
-        }
+   recipients = recipientsStrictAction;
+  }
 
-        WeakAction weakAction = new WeakAction<T>(recipient, action);
+  List<WeakActionAndToken> list;
 
-        WeakActionAndToken item = new WeakActionAndToken(weakAction, token);
-        list.add(item);
-        cleanup();
-    }
+  if (!recipients.containsKey(messageType)) {
+   list = new ArrayList<WeakActionAndToken>();
+   recipients.put(messageType, list);
+  } else {
+   list = recipients.get(messageType);
+  }
 
+  WeakAction weakAction = new WeakAction(recipient, action);
 
-    private void cleanup() {
-        cleanupList(recipientsOfSubclassesAction);
-        cleanupList(recipientsStrictAction);
-    }
+  WeakActionAndToken item = new WeakActionAndToken(weakAction, token);
+  list.add(item);
+  cleanup();
+ }
 
-    /**
-     * @param token send with a unique token,when a receiver has register with same token,it will
-     *              receive this msg
-     */
-    public void sendNoMsg(Object token) {
-        sendToTargetOrType(null, token);
-    }
+ /**
+  * @param recipient {}
+  * @param tClass    class of T
+  * @param action    this action has one params that type of tClass
+  * @param <T>       message data type
+  */
+ public <T> void register(Object recipient, Class<T> tClass, BindingConsumer<T> action) {
+  register(recipient, null, false, action, tClass);
+ }
 
-    /**
-     * send to recipient directly with has not any message
-     *
-     * @param target WeakMessenger.getDefault().register(this, ..) in a activity,if target set this
-     *               activity
-     *               it will receive the message
-     */
-    public void sendNoMsgToTarget(Object target) {
-        sendToTargetOrType(target.getClass(), null);
-    }
+ /**
+  * see {}
+  *
+  * @param recipient                 receiver of message
+  * @param receiveDerivedMessagesToo whether derived class of recipient can receive the message
+  * @param tClass                    class of T
+  * @param action                    this action has one params that type of tClass
+  * @param <T>                       message data type
+  */
+ public <T> void register(Object recipient, boolean receiveDerivedMessagesToo, Class<T> tClass, BindingConsumer<T> action) {
+  register(recipient, null, receiveDerivedMessagesToo, action, tClass);
+ }
 
-    /**
-     * send message to target with token,when a receiver has register with same token,it will
-     * receive this msg
-     *
-     * @param token  send with a unique token,when a receiver has register with same token,it will
-     *               receive this msg
-     * @param target send to recipient directly with has not any message,
-     *               WeakMessenger.getDefault().register(this, ..) in a activity,if target set this activity
-     *               it will receive the message
-     */
-    public void sendNoMsgToTargetWithToken(Object token, Object target) {
-        sendToTargetOrType(target.getClass(), token);
-    }
+ /**
+  * see {}
+  *
+  * @param recipient receiver of message
+  * @param token     register with a unique token,when a messenger send a msg with same token,it
+  *                  will
+  *                  receive this msg
+  * @param tClass    class of T for BindingConsumer
+  * @param action    this action has one params that type of tClass
+  * @param <T>       message data type
+  */
+ public <T> void register(Object recipient, Object token, Class<T> tClass, BindingConsumer<T> action) {
+  register(recipient, token, false, action, tClass);
+ }
 
-    /**
-     * send the message type of T, all receiver can receive the message
-     *
-     * @param message any object can to be a message
-     * @param <T>     message data type
-     */
-    public <T> void send(T message) {
-        sendToTargetOrType(message, null, null);
-    }
+ /**
+  * see {}
+  *
+  * @param recipient                 receiver of message
+  * @param token                     register with a unique token,when a messenger send a msg with same token,it
+  *                                  will
+  *                                  receive this msg
+  * @param receiveDerivedMessagesToo whether derived class of recipient can receive the message
+  * @param action                    this action has one params that type of tClass
+  * @param tClass                    class of T for BindingConsumer
+  * @param <T>                       message data type
+  */
+ public <T> void register(Object recipient, Object token, boolean receiveDerivedMessagesToo, BindingConsumer<T> action, Class<T> tClass) {
 
-    /**
-     * send the message type of T, all receiver can receive the message
-     *
-     * @param message any object can to be a message
-     * @param token   send with a unique token,when a receiver has register with same token,it will
-     *                receive this message
-     * @param <T>     message data type
-     */
-    public <T> void send(T message, Object token) {
-        sendToTargetOrType(message, null, token);
-    }
+  Type messageType = tClass;
 
-    /**
-     * send message to recipient directly
-     *
-     * @param message any object can to be a message
-     * @param target  send to recipient directly with has not any message,
-     *                WeakMessenger.getDefault().register(this, ..) in a activity,if target set this activity
-     *                it will receive the message
-     * @param <T>     message data type
-     * @param <R>     target
-     */
-    public <T, R> void sendToTarget(T message, R target) {
-        sendToTargetOrType(message, target.getClass(), null);
-    }
+  HashMap<Type, List<WeakActionAndToken>> recipients;
 
-    /**
-     * Unregister the receiver such as:
-     * WeakMessenger.getDefault().unregister(this)" in onDestroy in the Activity is required avoid
-     * to
-     * memory leak!
-     *
-     * @param recipient receiver of message
-     */
-    public void unregister(Object recipient) {
-        unregisterFromLists(recipient, recipientsOfSubclassesAction);
-        unregisterFromLists(recipient, recipientsStrictAction);
-        cleanup();
-    }
+  if (receiveDerivedMessagesToo) {
+   if (recipientsOfSubclassesAction == null) {
+    recipientsOfSubclassesAction = new HashMap<Type, List<WeakActionAndToken>>();
+   }
 
+   recipients = recipientsOfSubclassesAction;
+  } else {
+   if (recipientsStrictAction == null) {
+    recipientsStrictAction = new HashMap<Type, List<WeakActionAndToken>>();
+   }
 
-    public <T> void unregister(Object recipient, Object token) {
-        unregisterFromLists(recipient, token, null, recipientsStrictAction);
-        unregisterFromLists(recipient, token, null, recipientsOfSubclassesAction);
-        cleanup();
-    }
+   recipients = recipientsStrictAction;
+  }
 
+  List<WeakActionAndToken> list;
 
-    private static <T> void sendToList(
-            T message,
-            Collection<WeakActionAndToken> list,
-            Type messageTargetType,
-            Object token) {
-        if (list != null) {
-            // Clone to protect from people registering in a "receive message" method
-            // Bug correction Messaging BL0004.007
-            ArrayList<WeakActionAndToken> listClone = new ArrayList<>();
-            listClone.addAll(list);
+  if (!recipients.containsKey(messageType)) {
+   list = new ArrayList<WeakActionAndToken>();
+   recipients.put(messageType, list);
+  } else {
+   list = recipients.get(messageType);
+  }
 
-            for (WeakActionAndToken item : listClone) {
-                WeakAction executeAction = item.getAction();
-                if (executeAction != null
-                        && item.getAction().isLive()
-                        && item.getAction().getTarget() != null
-                        && (messageTargetType == null
-                        || item.getAction().getTarget().getClass() == messageTargetType
-                        || classImplements(item.getAction().getTarget().getClass(), messageTargetType))
-                        && ((item.getToken() == null && token == null)
-                        || item.getToken() != null && item.getToken().equals(token))) {
-                    executeAction.execute(message);
-                }
-            }
-        }
-    }
+  WeakAction weakAction = new WeakAction<T>(recipient, action);
 
-    private static void unregisterFromLists(Object recipient, HashMap<Type, List<WeakActionAndToken>> lists) {
-        if (recipient == null
-                || lists == null
-                || lists.size() == 0) {
-            return;
-        }
-        synchronized (lists) {
-            for (Type messageType : lists.keySet()) {
-                for (WeakActionAndToken item : lists.get(messageType)) {
-                    WeakAction weakAction = item.getAction();
+  WeakActionAndToken item = new WeakActionAndToken(weakAction, token);
+  list.add(item);
+  cleanup();
+ }
 
-                    if (weakAction != null
-                            && recipient == weakAction.getTarget()) {
-                        weakAction.markForDeletion();
-                    }
-                }
-            }
-        }
-        cleanupList(lists);
-    }
+ private void cleanup() {
+  cleanupList(recipientsOfSubclassesAction);
+  cleanupList(recipientsStrictAction);
+ }
 
-    private static <T> void unregisterFromLists(
-            Object recipient,
-            BindingConsumer<T> action,
-            HashMap<Type, List<WeakActionAndToken>> lists,
-            Class<T> tClass) {
-        Type messageType = tClass;
+ /**
+  * @param token send with a unique token,when a receiver has register with same token,it will
+  *              receive this msg
+  */
+ public void sendNoMsg(Object token) {
+  sendToTargetOrType(null, token);
+ }
 
-        if (recipient == null
-                || lists == null
-                || lists.size() == 0
-                || !lists.containsKey(messageType)) {
-            return;
-        }
+ /**
+  * send to recipient directly with has not any message
+  *
+  * @param target WeakMessenger.getDefault().register(this, ..) in a activity,if target set this
+  *               activity
+  *               it will receive the message
+  */
+ public void sendNoMsgToTarget(Object target) {
+  sendToTargetOrType(target.getClass(), null);
+ }
 
-        synchronized (lists) {
-            for (WeakActionAndToken item : lists.get(messageType)) {
-                WeakAction<T> weakActionCasted = (WeakAction<T>) item.getAction();
+ /**
+  * send message to target with token,when a receiver has register with same token,it will
+  * receive this msg
+  *
+  * @param token  send with a unique token,when a receiver has register with same token,it will
+  *               receive this msg
+  * @param target send to recipient directly with has not any message,
+  *               WeakMessenger.getDefault().register(this, ..) in a activity,if target set this activity
+  *               it will receive the message
+  */
+ public void sendNoMsgToTargetWithToken(Object token, Object target) {
+  sendToTargetOrType(target.getClass(), token);
+ }
 
-                if (weakActionCasted != null
-                        && recipient == weakActionCasted.getTarget()
-                        && (action == null
-                        || action == weakActionCasted.getBindingConsumer())) {
-                    item.getAction().markForDeletion();
-                }
-            }
-        }
-    }
+ /**
+  * send the message type of T, all receiver can receive the message
+  *
+  * @param message any object can to be a message
+  * @param <T>     message data type
+  */
+ public <T> void send(T message) {
+  sendToTargetOrType(message, null, null);
+ }
 
-    private static void unregisterFromLists(
-            Object recipient,
-            BindingAction action,
-            HashMap<Type, List<WeakActionAndToken>> lists
-    ) {
-        Type messageType = NotMsgType.class;
+ /**
+  * send the message type of T, all receiver can receive the message
+  *
+  * @param message any object can to be a message
+  * @param token   send with a unique token,when a receiver has register with same token,it will
+  *                receive this message
+  * @param <T>     message data type
+  */
+ public <T> void send(T message, Object token) {
+  sendToTargetOrType(message, null, token);
+ }
 
-        if (recipient == null
-                || lists == null
-                || lists.size() == 0
-                || !lists.containsKey(messageType)) {
-            return;
-        }
+ /**
+  * send message to recipient directly
+  *
+  * @param message any object can to be a message
+  * @param target  send to recipient directly with has not any message,
+  *                WeakMessenger.getDefault().register(this, ..) in a activity,if target set this activity
+  *                it will receive the message
+  * @param <T>     message data type
+  * @param <R>     target
+  */
+ public <T, R> void sendToTarget(T message, R target) {
+  sendToTargetOrType(message, target.getClass(), null);
+ }
 
-        synchronized (lists) {
-            for (WeakActionAndToken item : lists.get(messageType)) {
-                WeakAction weakActionCasted = (WeakAction) item.getAction();
+ /**
+  * Unregister the receiver such as:
+  * WeakMessenger.getDefault().unregister(this)" in onDestroy in the Activity is required avoid
+  * to
+  * memory leak!
+  *
+  * @param recipient receiver of message
+  */
+ public void unregister(Object recipient) {
+  unregisterFromLists(recipient, recipientsOfSubclassesAction);
+  unregisterFromLists(recipient, recipientsStrictAction);
+  cleanup();
+ }
 
-                if (weakActionCasted != null
-                        && recipient == weakActionCasted.getTarget()
-                        && (action == null
-                        || action == weakActionCasted.getBindingAction())) {
-                    item.getAction().markForDeletion();
-                }
-            }
-        }
-    }
+ public <T> void unregister(Object recipient, Object token) {
+  unregisterFromLists(recipient, token, null, recipientsStrictAction);
+  unregisterFromLists(recipient, token, null, recipientsOfSubclassesAction);
+  cleanup();
+ }
 
-
-    private static <T> void unregisterFromLists(
-            Object recipient,
-            Object token,
-            BindingConsumer<T> action,
-            HashMap<Type, List<WeakActionAndToken>> lists, Class<T> tClass) {
-        Type messageType = tClass;
-
-        if (recipient == null
-                || lists == null
-                || lists.size() == 0
-                || !lists.containsKey(messageType)) {
-            return;
-        }
-
-        synchronized (lists) {
-            for (WeakActionAndToken item : lists.get(messageType)) {
-                WeakAction<T> weakActionCasted = (WeakAction<T>) item.getAction();
-
-                if (weakActionCasted != null
-                        && recipient == weakActionCasted.getTarget()
-                        && (action == null
-                        || action == weakActionCasted.getBindingConsumer())
-                        && (token == null
-                        || token.equals(item.getToken()))) {
-                    item.getAction().markForDeletion();
-                }
-            }
-        }
-    }
-
-    private static void unregisterFromLists(
-            Object recipient,
-            Object token,
-            BindingAction action,
-            HashMap<Type, List<WeakActionAndToken>> lists) {
-        Type messageType = NotMsgType.class;
-
-        if (recipient == null
-                || lists == null
-                || lists.size() == 0
-                || !lists.containsKey(messageType)) {
-            return;
-        }
-
-        synchronized (lists) {
-            for (WeakActionAndToken item : lists.get(messageType)) {
-                WeakAction weakActionCasted = (WeakAction) item.getAction();
-
-                if (weakActionCasted != null
-                        && recipient == weakActionCasted.getTarget()
-                        && (action == null
-                        || action == weakActionCasted.getBindingAction())
-                        && (token == null
-                        || token.equals(item.getToken()))) {
-                    item.getAction().markForDeletion();
-                }
-            }
-        }
-    }
-
-    private static boolean classImplements(Type instanceType, Type interfaceType) {
-        if (interfaceType == null
-                || instanceType == null) {
-            return false;
-        }
-        Class[] interfaces = ((Class) instanceType).getInterfaces();
-        for (Class currentInterface : interfaces) {
-            if (currentInterface == interfaceType) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static void cleanupList(HashMap<Type, List<WeakActionAndToken>> lists) {
-        if (lists == null) {
-            return;
-        }
-        for (Iterator it = lists.entrySet().iterator(); it.hasNext(); ) {
-            Object key = it.next();
-            List<WeakActionAndToken> itemList = lists.get(key);
-            if (itemList != null) {
-                for (WeakActionAndToken item : itemList) {
-                    if (item.getAction() == null
-                            || !item.getAction().isLive()) {
-                        itemList.remove(item);
-                    }
-                }
-                if (itemList.size() == 0) {
-                    lists.remove(key);
-                }
-            }
-        }
-    }
-
-    private void sendToTargetOrType(Type messageTargetType, Object token) {
-        Class messageType = NotMsgType.class;
-        if (recipientsOfSubclassesAction != null) {
-            // Clone to protect from people registering in a "receive message" method
-            // Bug correction Messaging BL0008.002
+ private void sendToTargetOrType(Type messageTargetType, Object token) {
+  Class messageType = NotMsgType.class;
+  if (recipientsOfSubclassesAction != null) {
+   // Clone to protect from people registering in a "receive message" method
+   // Bug correction Messaging BL0008.002
 //            var listClone = recipientsOfSubclassesAction.Keys.Take(_recipientsOfSubclassesAction.Count()).ToList();
-            List<Type> listClone = new ArrayList<>();
-            listClone.addAll(recipientsOfSubclassesAction.keySet());
-            for (Type type : listClone) {
-                List<WeakActionAndToken> list = null;
+   List<Type> listClone = new ArrayList<>();
+   listClone.addAll(recipientsOfSubclassesAction.keySet());
+   for (Type type : listClone) {
+    List<WeakActionAndToken> list = null;
 
-                if (messageType == type
-                        || ((Class) type).isAssignableFrom(messageType)
-                        || classImplements(messageType, type)) {
-                    list = recipientsOfSubclassesAction.get(type);
-                }
-
-                sendToList(list, messageTargetType, token);
-            }
-        }
-
-        if (recipientsStrictAction != null) {
-            if (recipientsStrictAction.containsKey(messageType)) {
-                List<WeakActionAndToken> list = recipientsStrictAction.get(messageType);
-                sendToList(list, messageTargetType, token);
-            }
-        }
-
-        cleanup();
+    if (messageType == type
+     || ((Class) type).isAssignableFrom(messageType)
+     || classImplements(messageType, type)) {
+     list = recipientsOfSubclassesAction.get(type);
     }
 
-    private static void sendToList(
-            Collection<WeakActionAndToken> list,
-            Type messageTargetType,
-            Object token) {
-        if (list != null) {
-            // Clone to protect from people registering in a "receive message" method
-            // Bug correction Messaging BL0004.007
-            ArrayList<WeakActionAndToken> listClone = new ArrayList<>();
-            listClone.addAll(list);
+    sendToList(list, messageTargetType, token);
+   }
+  }
 
-            for (WeakActionAndToken item : listClone) {
-                WeakAction executeAction = item.getAction();
-                if (executeAction != null
-                        && item.getAction().isLive()
-                        && item.getAction().getTarget() != null
-                        && (messageTargetType == null
-                        || item.getAction().getTarget().getClass() == messageTargetType
-                        || classImplements(item.getAction().getTarget().getClass(), messageTargetType))
-                        && ((item.getToken() == null && token == null)
-                        || item.getToken() != null && item.getToken().equals(token))) {
-                    executeAction.execute();
-                }
-            }
-        }
-    }
+  if (recipientsStrictAction != null) {
+   if (recipientsStrictAction.containsKey(messageType)) {
+    List<WeakActionAndToken> list = recipientsStrictAction.get(messageType);
+    sendToList(list, messageTargetType, token);
+   }
+  }
 
-    private <T> void sendToTargetOrType(T message, Type messageTargetType, Object token) {
-        Class messageType = message.getClass();
+  cleanup();
+ }
+
+ private <T> void sendToTargetOrType(T message, Type messageTargetType, Object token) {
+  Class messageType = message.getClass();
 
 
-        if (recipientsOfSubclassesAction != null) {
-            // Clone to protect from people registering in a "receive message" method
-            // Bug correction Messaging BL0008.002
+  if (recipientsOfSubclassesAction != null) {
+   // Clone to protect from people registering in a "receive message" method
+   // Bug correction Messaging BL0008.002
 //            var listClone = recipientsOfSubclassesAction.Keys.Take(_recipientsOfSubclassesAction.Count()).ToList();
-            List<Type> listClone = new ArrayList<>();
-            listClone.addAll(recipientsOfSubclassesAction.keySet());
-            for (Type type : listClone) {
-                List<WeakActionAndToken> list = null;
+   List<Type> listClone = new ArrayList<>();
+   listClone.addAll(recipientsOfSubclassesAction.keySet());
+   for (Type type : listClone) {
+    List<WeakActionAndToken> list = null;
 
-                if (messageType == type
-                        || ((Class) type).isAssignableFrom(messageType)
-                        || classImplements(messageType, type)) {
-                    list = recipientsOfSubclassesAction.get(type);
-                }
-
-                sendToList(message, list, messageTargetType, token);
-            }
-        }
-
-        if (recipientsStrictAction != null) {
-            if (recipientsStrictAction.containsKey(messageType)) {
-                List<WeakActionAndToken> list = recipientsStrictAction.get(messageType);
-                sendToList(message, list, messageTargetType, token);
-            }
-        }
-
-        cleanup();
+    if (messageType == type
+     || ((Class) type).isAssignableFrom(messageType)
+     || classImplements(messageType, type)) {
+     list = recipientsOfSubclassesAction.get(type);
     }
 
-    private class WeakActionAndToken {
-        private WeakAction action;
-        private Object token;
+    sendToList(message, list, messageTargetType, token);
+   }
+  }
 
-        public WeakActionAndToken(WeakAction action, Object token) {
-            this.action = action;
-            this.token = token;
-        }
+  if (recipientsStrictAction != null) {
+   if (recipientsStrictAction.containsKey(messageType)) {
+    List<WeakActionAndToken> list = recipientsStrictAction.get(messageType);
+    sendToList(message, list, messageTargetType, token);
+   }
+  }
 
-        public WeakAction getAction() {
-            return action;
-        }
+  cleanup();
+ }
 
-        public void setAction(WeakAction action) {
-            this.action = action;
-        }
+ public static class NotMsgType {
 
-        public Object getToken() {
-            return token;
-        }
+ }
 
-        public void setToken(Object token) {
-            this.token = token;
-        }
-    }
+ private class WeakActionAndToken {
+  private WeakAction action;
+  private Object token;
 
-    public static class NotMsgType {
+  public WeakActionAndToken(WeakAction action, Object token) {
+   this.action = action;
+   this.token = token;
+  }
 
-    }
+  public WeakAction getAction() {
+   return action;
+  }
+
+  public void setAction(WeakAction action) {
+   this.action = action;
+  }
+
+  public Object getToken() {
+   return token;
+  }
+
+  public void setToken(Object token) {
+   this.token = token;
+  }
+ }
 }
