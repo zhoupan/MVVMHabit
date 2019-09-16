@@ -6,8 +6,9 @@ key.jks
 /.idea/libraries
 /.idea
 .DS_Store
-/build
+/**/build
 /captures
 .externalNativeBuild
 /app/release
 /mvvmhabit/bintray.gradle
+/.project
